@@ -25,14 +25,16 @@ runs:
     - name: Run Scripts Inside Docker
       run: |
         echo "${{ inputs.scripts_list }}" | while read script; do
-          echo "Running $script..."
-          docker run --rm \
-            --add-host=host.docker.internal:host-gateway \
-            -v ${{ inputs.scripts_path }}:/connekt/scripts \
-            -v ${{ inputs.env_file }}:/connekt/scripts/connekt.env.json \
-            ${{ inputs.image }} \
-            --env-name=${{ inputs.env }} \
-            --env-file=scripts/connekt.env.json \
-            --script=scripts/$script
+          if [ -n "$script" ]; then
+            echo "Running $script..."
+            docker run --rm \
+              --add-host=host.docker.internal:host-gateway \
+              -v ${{ inputs.scripts_path }}:/connekt/scripts \
+              -v ${{ inputs.env_file }}:/connekt/scripts/connekt.env.json \
+              ${{ inputs.image }} \
+              --env-name=${{ inputs.env }} \
+              --env-file=scripts/connekt.env.json \
+              --script=scripts/$script
+          fi
         done
       shell: bash
