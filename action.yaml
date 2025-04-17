@@ -1,0 +1,38 @@
+name: 'Run ConneKt Scripts'
+description: 'Run a list of scripts inside a container with environment setup'
+
+inputs:
+  scripts_path:
+    description: 'Path to local directory with scripts'
+    required: true
+  scripts_list:
+    description: 'List of scripts to execute (newline separated)'
+    required: true
+  env_file:
+    description: 'Path to env file (connekt.env.json)'
+    required: true
+  env:
+    description: 'Environment name'
+    required: true
+  image:
+    description: 'Docker image to use'
+    required: false
+    default: 'ghcr.io/amplicode/connekt:0.1'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Scripts Inside Docker
+      run: |
+        echo "${{ inputs.scripts_list }}" | while read script; do
+          echo "Running $script..."
+          docker run --rm \
+            --add-host=host.docker.internal:host-gateway \
+            -v ${{ inputs.scripts_path }}:/connekt/scripts \
+            -v ${{ inputs.env_file }}:/connekt/scripts/connekt.env.json \
+            ${{ inputs.image }} \
+            --env-name=${{ inputs.env }} \
+            --env-file=scripts/connekt.env.json \
+            --script=scripts/$script
+        done
+      shell: bash
