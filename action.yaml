@@ -2,11 +2,8 @@ name: 'Run ConneKt Scripts'
 description: 'Run a list of scripts inside a container with environment setup'
 
 inputs:
-  scripts_path:
-    description: 'Path to local directory with scripts'
-    required: true
-  scripts_list:
-    description: 'List of scripts to execute (newline separated)'
+  files:
+    description: 'List of full paths to scripts to execute (newline separated)'
     required: true
   env_file:
     description: 'Path to env file (connekt.env.json)'
@@ -24,17 +21,21 @@ runs:
   steps:
     - name: Run Scripts Inside Docker
       run: |
-        echo "${{ inputs.scripts_list }}" | while read script; do
-          if [ -n "$script" ]; then
-            echo "Running $script..."
+        echo "${{ inputs.files }}" | while read filepath; do
+          if [ -n "$filepath" ]; then
+            filename=$(basename "$filepath")
+            dirpath=$(dirname "$filepath")
+
+            echo "Running $filename from $dirpath..."
+
             docker run --rm \
               --add-host=host.docker.internal:host-gateway \
-              -v ${{ inputs.scripts_path }}:/connekt/scripts \
+              -v "$dirpath":/connekt/scripts \
               -v ${{ inputs.env_file }}:/connekt/scripts/connekt.env.json \
               ${{ inputs.image }} \
               --env-name=${{ inputs.env }} \
               --env-file=scripts/connekt.env.json \
-              --script=scripts/$script
+              --script=scripts/"$filename"
           fi
         done
       shell: bash
