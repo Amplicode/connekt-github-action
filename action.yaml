@@ -43,7 +43,7 @@ runs:
         ENV_FILE_ARG=""
         if [ -n "${{ inputs.env_file }}" ]; then
           ENV_FILE_ABS_PATH="$(realpath ${{ inputs.env_file }})"
-          ENV_FILE_MOUNT="-v \"$ENV_FILE_ABS_PATH\":/connekt/scripts/connekt.env.json"
+          ENV_FILE_MOUNT="-v $ENV_FILE_ABS_PATH:/connekt/scripts/connekt.env.json"
           ENV_FILE_ARG="--env-file=scripts/connekt.env.json"
         fi
 
