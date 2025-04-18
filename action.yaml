@@ -7,10 +7,14 @@ inputs:
     required: true
   env_file:
     description: 'Path to env file (connekt.env.json)'
-    required: true
+    required: false
   env:
     description: 'Environment name'
-    required: true
+    required: false
+  env_params:
+    description: 'List of env-param values (newline separated key=value)'
+    required: false
+    default: ''
   image:
     description: 'Docker image to use'
     required: false
@@ -21,6 +25,28 @@ runs:
   steps:
     - name: Run Scripts Inside Docker
       run: |
+        ENV_PARAM_ARGS=""
+        if [ -n "${{ inputs.env_params }}" ]; then
+          while read param; do
+            if [ -n "$param" ]; then
+              ENV_PARAM_ARGS="$ENV_PARAM_ARGS --env-param $param"
+            fi
+          done <<< "${{ inputs.env_params }}"
+        fi
+
+        ENV_NAME_ARG=""
+        if [ -n "${{ inputs.env }}" ]; then
+          ENV_NAME_ARG="--env-name=${{ inputs.env }}"
+        fi
+
+        ENV_FILE_MOUNT=""
+        ENV_FILE_ARG=""
+        if [ -n "${{ inputs.env_file }}" ]; then
+          ENV_FILE_ABS_PATH="$(realpath ${{ inputs.env_file }})"
+          ENV_FILE_MOUNT="-v \"$ENV_FILE_ABS_PATH\":/connekt/scripts/connekt.env.json"
+          ENV_FILE_ARG="--env-file=scripts/connekt.env.json"
+        fi
+
         echo "${{ inputs.files }}" | while read filepath; do
           if [ -n "$filepath" ]; then
             filename=$(basename "$filepath")
@@ -31,11 +57,12 @@ runs:
             docker run --rm \
               --add-host=host.docker.internal:host-gateway \
               -v "$dirpath":/connekt/scripts \
-              -v ${{ inputs.env_file }}:/connekt/scripts/connekt.env.json \
+              $ENV_FILE_MOUNT \
               ${{ inputs.image }} \
-              --env-name=${{ inputs.env }} \
-              --env-file=scripts/connekt.env.json \
-              --script=scripts/"$filename"
+              $ENV_NAME_ARG \
+              $ENV_FILE_ARG \
+              --script=scripts/"$filename" \
+              $ENV_PARAM_ARGS
           fi
         done
       shell: bash
